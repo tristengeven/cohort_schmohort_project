@@ -6,9 +6,14 @@
 `include "or.v"
 `include "xor.v"
 `include "not.v"
+`include "nor.v"
+`include "xnor.v"
+`include "nand.v"
+`include "mult.v"
+
 
 module ALU(funct, A, B, currentState, nextState, accumulator, out, carry, overflow);
-	input [2:0] funct;
+	input [3:0] funct;
 	input [7:0] A;
 	input [7:0] B;
 	input [1:0] currentState;
@@ -34,16 +39,24 @@ module ALU(funct, A, B, currentState, nextState, accumulator, out, carry, overfl
 	wire [7:0] OutOr;
 	wire [7:0] OutXor;
 	wire [7:0] OutNot;
+	wire [7:0] OutXnor;
+	wire [7:0] OutNand;
+	wire [7:0] OutNor;
+	wire [7:0] OutMult;
 	
 	// generate subcircuits
 	ADD add(A, B, OutAdd, ChkAdd);
 	SUB sub(A, B, OutSub, ChkSub);
+	MULT mult(A, B, OutMult, ChkMult);
 	SHIFTL shiftl(A, B, OutShiftl, Cshiftl);
 	SHIFTR shiftr(A, B, OutShiftr, Cshiftr);
 	AND andl(A, B, OutAnd);
 	OR orl(A, B, OutOr);
 	XOR xorl(A, B, OutXor);
 	NOT notl(A, OutNot);
+	NAND nandl(A, B, OutNand);
+	NOR norl(A, B, OutNor);
+	XNOR xnorl(A, B, OutXnor);
 	
 	always @(*) begin
 		//Functions as a MUX for results

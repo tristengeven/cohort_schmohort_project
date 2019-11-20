@@ -1,5 +1,5 @@
-// logic op nand
-module NAND(A, B, Out);
+// logic op nor
+module NOR(A, B, Out);
 	input [7:0] A;
 	input [7:0] B;
 	
@@ -7,6 +7,6 @@ module NAND(A, B, Out);
 	reg Out;
 	
 	always @(*) begin
-		Out = ~(A & B); // nand
+		Out = ~(A | B); // nor
 	end
 endmodule

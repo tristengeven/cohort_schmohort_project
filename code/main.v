@@ -9,7 +9,7 @@
 
 module Test_Bench;
 	// inputs
-	reg [2:0] funct;				// selector for op
+	reg [3:0] funct;				// selector for op
 	reg signed [7:0] A;			// operand A
 	reg signed [7:0] B;			// operand B
 	reg [1:0] currentState;	 	// current state
