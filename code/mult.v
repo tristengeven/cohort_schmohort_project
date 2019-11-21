@@ -7,13 +7,14 @@ module Tristate(in, oe, out);
     bufif1 b1(out, in, oe);
 endmodule
 
-module multi_8_bit(
+module MULT(
 	//a : multiplicand
 	//b : multiplier
 	//p : product
 	input [7:0] a,
 	input [7:0] b,
-	output reg [15:0] p
+	output reg [7:0] p,
+	output reg checkMult
 );
 	reg [16:0] tmp_a, tmp_a_2comp, tmp_p;
 	reg [7:0] a_2comp;
@@ -44,10 +45,12 @@ module multi_8_bit(
 			endcase	
 		end
 		
-		assign p = tmp_p[16:1];
+		p = tmp_p[7:0];
+		checkMult = |tmp_p[15:8];
 	end	
 endmodule
 
+/*
 module multi_8_bit_test;
 
 	// Inputs
@@ -79,3 +82,4 @@ module multi_8_bit_test;
 	end
       
 endmodule
+*/
