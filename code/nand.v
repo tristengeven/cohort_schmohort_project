@@ -1,12 +1,3 @@
-// logic op nand
-module NAND(A, B, Out);
-	input [7:0] A;
-	input [7:0] B;
-	
-	output [7:0] Out;
-	reg Out;
-	
-	always @(*) begin
-		Out = ~(A & B); // nand
-	end
+module NAND(input[0:7] inA, inB, output[0:7] out);
+    assign out = ~(inA | inB);
 endmodule
