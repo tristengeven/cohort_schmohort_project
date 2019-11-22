@@ -2,80 +2,60 @@
 	CS 4341.001
 	Fall 2019
 	Cohort: Cohort Schmohort 
-	Icarus Verilog v0.9.7 (source: http://bleyer.org/icarus/)
+	Icarus Verilog v10.1.1 (source: http://bleyer.org/icarus/)
 */
 
 `include "alu.v"
 
 module Test_Bench;
-	// inputs
-	reg [3:0] funct;				// selector for op
-	reg signed [7:0] A;			// operand A
-	reg signed [7:0] B;			// operand B
-	reg [1:0] currentState;	 	// current state
-	reg [5*8:0] currentString;
-	reg	[5*8:0] opString;
-	reg [5*8:0] nextString;
-
-	// outputs
-	wire [1:0] nextState;
-	wire [7:0] accumulator;
-	wire signed [7:0] out;
-	wire carry;
-	wire overflow;
+	parameter bits = 16;
+	reg clk, rst;
+	reg unsigned [bits-1:0] A, B;
+	reg [2:0] opcode;
+	wire [bits-1:0] out;
+	wire status;
 	
-	// generate alu
-	ALU alu(funct, A, B, currentState, nextState, accumulator, out, carry, overflow);
+	// generate ALU
+	ALU alu(clk, rst, A, B, opcode, out, status);
 	
 	initial begin
-		$display(" Operand A       | Operand B       | Operation    | Current State | Output          | Next State");
-		$display("-----------------|-----------------|--------------|---------------|-----------------|------------");
-		currentState = 0;	// reset
-		funct = 0;
-		forever begin
-			//Uses random values to display various results
-			A = 24;
-			B = 6;
-			#5
-			if(currentState == 0)
-				currentString = "READY";
-			if(currentState == 1)
-				currentString = "ARITH";
-			if(currentState == 2)
-				currentString = "LOGIC";
-			if(currentState == 3)
-				nextString = "ERROR";
-			if(funct == 0)
-				opString = "ADD";
-			if(funct == 1)
-				opString = "SUB";
-			if(funct == 2)
-				opString = "SHFTL";
-			if(funct == 3)
-				opString = "SHFTR";
-			if(funct == 4)
-				opString = "AND";
-			if(funct == 5)
-				opString = "OR";
-			if(funct == 6)
-				opString = "XOR";
-			if(funct == 7)
-				opString = "NOT";
-			if(nextState == 0)
-				nextString = "READY";
-			if(nextState == 1)
-				nextString = "ARITH";
-			if(nextState == 2)
-				nextString = "LOGIC";
-			if(nextState == 3)
-				nextString = "ERROR";
-			$display(" %8b (%4d) | %8b (%4d) | %-6s (%3b) | %-8s (%2d) | %8b (%4d) | %-5s (%2d)", A, A, B, B, opString, funct, currentString, currentState, out, out, nextString, nextState);
-			funct = funct + 1;
-
-		end
-	end
-	
-	initial begin
-		#40 $finish;
+		$display("          Input A          |         Input B          |   Op Code/Operation   |           Output           | Next State");
+		$display("---------------------------|--------------------------|-----------------------|----------------------------|------------");
+		rst = 0; clk = 0;
+		#5 rst = 1; #5 clk = 1; #5 clk = 0; rst = 0; $display("                                                               (RESET)               %b", out);
+		#5 A = 33; B = 45; opcode = `ADD;
+		#5 clk = 1; #5; clk = 0; 
+		$display("   %b (%d)|  %b (%d)|     %b      (%s)    |%b     (%d)|   %0s", A, A, B, B, opcode, "ADD", out, out, status == 1'b0 ? "Ready" : "ERROR");
+		#5 A = 64; B = 30; opcode = `SUB;
+		#5 clk = 1; #5; clk = 0; 
+		$display("   %b (%d)|  %b (%d)|     %b      (%s)    |%b     (%d)|   %0s", A, A, B, B, opcode, "SUB", out, out, status == 1'b0 ? "Ready" : "Ready");
+		#5 A = 12; B = 12; opcode = `MULT;
+		#5 clk = 1; #5; clk = 0; 
+		$display("   %b (%d)|  %b (%d)|     %b      (%s)    |%b     (%d)|   %0s", A, A, B, B, opcode, "SUB", out, out, status == 1'b0 ? "Ready" : "Ready");
+		#5; A = 9999; B = 9999; opcode = `MULT;
+		#5 clk = 1; #5; clk = 0; 
+		$display("   %b (%d)|  %b (%d)|     %b      (%s)   |%b     (%d)|   %0s", A, A, B, B, opcode, "MULT", status == 1'b0 ? out : 16'b0000000000000000, status == 1'b0 ? out : 16'b0000000000000000, status == 1'b0 ? "Ready" : "ERROR");
+		#5 rst = 1; #5 clk = 1; #5 clk = 0; rst = 0; $display("                                                               (RESET)               %b", out);
+		#5; A = 10; B = 1; opcode = `SHIFT_LEFT;
+		#5 clk = 1; #5; clk = 0; 
+		$display("   %b (%d)|  %b (%d)|     %b      (%s)  |%b     (%d)|   %0s", A, A, B, B, opcode, "LSHFT", out, out, status == 1'b0 ? "Ready" : "ERROR");
+		#5 rst = 1; #5 clk = 1; #5 clk = 0; rst = 0;
+		#5; A = 3855; B = 13107; opcode = `AND;
+		#5 clk = 1; #5; clk = 0; 
+		$display("   %b (%d)|  %b (%d)|     %b      (%s)    |%b     (%d)|   %0s", A, A, B, B, opcode, "AND", out, out, status == 1'b0 ? "Ready" : "ERROR");
+		#5 rst = 1; #5 clk = 1; #5 clk = 0; rst = 0;
+		#5; A = 3855; B = 13107; opcode = `OR;
+		#5 clk = 1; #5; clk = 0; 
+		$display("   %b (%d)|  %b (%d)|     %b      (%s)     |%b     (%d)|   %0s", A, A, B, B, opcode, "OR", out, out, status == 1'b0 ? "Ready" : "ERROR");
+		#5 rst = 1; #5 clk = 1; #5 clk = 0; rst = 0;
+		#5; A = 3855; B = 13107; opcode = `XOR;
+		#5 clk = 1; #5; clk = 0; 
+		$display("   %b (%d)|  %b (%d)|     %b      (%s)    |%b     (%d)|   %0s", A, A, B, B, opcode, "XOR", out, out, status == 1'b0 ? "Ready" : "ERROR");
+		#5 rst = 1; #5 clk = 1; #5 clk = 0; rst = 0;
+		#5; A = 3855; B = 13107; opcode = `NOT;
+		#5 clk = 1; #5; clk = 0; 
+		$display("   %b (%d)|  %b (%d)|     %b      (%s)    |%b     (%d)|   %0s", A, A, B, B, opcode, "NOT", out, out, status == 1'b0 ? "Ready" : "ERROR");
+		#5 rst = 1; #5 clk = 1; #5 clk = 0; rst = 0; $display("                                                               (RESET)               %b", out);
+		$finish;
 	end
 endmodule

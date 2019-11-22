@@ -1,16 +1,12 @@
-// arithmetic op bitwise shift left
-module SHIFTL(A, B, Out, Carry);
-	input [7:0] A;
-	input [7:0] B;
+// arithmetic op shift left
+module SHIFTL(A, B, Out);
+	input [15:0] A;
+	input [15:0] B;
 	
-	output [7:0] Out;
-	output Carry;
-	
+	output [15:0] Out;
 	reg Out;
-	reg Carry;
 	
 	always @(*) begin
-		Out = A * (2**B); // shift left
-		Carry = A / (2**(8-B)) > 0; // carry bit
+		Out = A << B; // shift left
 	end
 endmodule

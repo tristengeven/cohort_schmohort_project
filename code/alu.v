@@ -1,143 +1,74 @@
-`include "add.v"
-`include "sub.v"
-`include "shiftl.v"
-`include "shiftr.v"
 `include "and.v"
+`include "simpleand.v"
+`include "mult.v"
+`include "shiftl.v"
 `include "or.v"
 `include "xor.v"
 `include "not.v"
-`include "nor.v"
-`include "xnor.v"
-`include "nand.v"
-`include "mult.v"
+`include "add_subtract.v"
+`include "dff.v"
+`include "mux.v"
+`include "selector.v"
 
-
-module ALU(funct, A, B, currentState, nextState, accumulator, out, carry, overflow);
-	input [3:0] funct;
-	input [7:0] A;
-	input [7:0] B;
-	input [1:0] currentState;
-
-	output [1:0] nextState;
-	output [7:0] accumulator;
-	output [7:0] out;
-	output carry;
-	output overflow;
-
-	reg nextState;
-	reg accumulator;
-	reg out;
-	reg carry;
-	reg overflow;
+module ALU(input clk, rst, input [15:0] A, B, input [2:0] opcode, output [15:0] out, output reg status);
+	parameter bits = 16;
 	
-	// suboperation wires
-	wire [7:0] OutAdd;
-	wire [7:0] OutSub;
-	wire [7:0] OutShiftl;
-	wire [7:0] OutShiftr;
-	wire [7:0] OutAnd;
-	wire [7:0] OutOr;
-	wire [7:0] OutXor;
-	wire [7:0] OutNot;
-	wire [7:0] OutXnor;
-	wire [7:0] OutNand;
-	wire [7:0] OutNor;
-	wire [7:0] OutMult;
+	wire [bits-1:0] next_state;
+	wire op_complete, prev_out, error;
+	wire [bits-1:0] opA;
 	
-	// generate subcircuits
-	ADD add(A, B, OutAdd, ChkAdd);
-	SUB sub(A, B, OutSub, ChkSub);
-	MULT mult(A, B, OutMult, ChkMult);
-	SHIFTL shiftl(A, B, OutShiftl, Cshiftl);
-	SHIFTR shiftr(A, B, OutShiftr, Cshiftr);
-	AND andl(A, B, OutAnd);
-	OR orl(A, B, OutOr);
-	XOR xorl(A, B, OutXor);
-	NOT notl(A, OutNot);
-	NAND nandl(A, B, OutNand);
-	NOR norl(A, B, OutNor);
-	XNOR xnorl(A, B, OutXnor);
-	
-	always @(*) begin
-		//Functions as a MUX for results
-		case(funct)
-			0:begin						// arithmetic op addition
-				if(currentState == 0)	// ready state
-					out = OutAdd;			
-					overflow = ChkAdd;
-					nextState = 1;		// arithmetic unit state
-				if(overflow == 0)		// op done
-					accumulator = OutAdd;
-					nextState = 0;		// ready state
-				if(overflow != 0)		// error triggered
-					nextState = 3;		// error state
-			end
-			1:begin 					// arithmetic op subtraction
-				if(currentState == 0)	// ready state
-					out = OutSub;
-					overflow = ChkSub;
-					nextState = 1;		// arithmetic unit state
-				if(overflow == 0)		// op done
-					accumulator = OutSub;
-					nextState = 0;		// ready state				
-				if(overflow != 0)		// error triggered
-					nextState = 3;		// error state
-			end
-			2:begin 					// arithmetic op shift left
-				if(currentState == 0)	// ready state
-					out = OutShiftl;
-					carry = Cshiftl;
-					nextState = 1;		// arithmetic unit state
-				if(carry == 0)			// op done
-					accumulator = OutShiftl;
-					nextState = 0;		// ready state
-				if(carry != 0)			// error triggered
-					nextState = 3;		// error state
-			end
-			3:begin 					// arithmetic op shift right
-				if (currentState == 0)	// ready state
-					out = OutShiftr;
-					carry = Cshiftr;
-					nextState = 1;		// arithmetic unit state
-				if(carry == 0)			// op done
-					accumulator = OutShiftr;
-					nextState = 0;		// ready state
-				if(carry != 0)			// error triggered
-					nextState = 3;		// error state
+	// checks if first op is completed
+	DFF_1 dff_1(clk, ~rst, op_complete);
 
-			end
-			4:begin 						// logic op and
-				if (currentState == 0)		// ready state
-					out = OutAnd;
-					accumulator = OutAnd;
-					nextState = 2;			// logic unit state
-											// op done
-					nextState = 0;			// ready state
-			end
-			5:begin	 						// logic op or
-				if (currentState == 0)		// ready state
-					out = OutOr;
-					accumulator = OutOr;
-					nextState = 2;			// logic unit state
-											// op done
-					nextState = 0;			// ready state
-			end
-			6:begin							// logic op xor
-				if (currentState == 0)		// ready state
-					out = OutXor;
-					accumulator = OutXor;
-					nextState = 2;			// logic unit state
-											// op done
-					nextState = 0;			// ready state
-			end
-			7:begin 						// logic op not
-				if (currentState == 0)		// ready state
-					out = OutNot;
-					accumulator = OutNot;
-					nextState = 2;			// logic unit state
-											// op done
-					nextState = 0;			// ready state
-			end
-		endcase
+	// selects original input or last output based on prev_out value
+	SIMPLE_AND and1((^op_complete === 1'bx ? 1'b0: op_complete), ~rst, prev_out);
+
+	// set next state value to current state at the positive edge of clk
+	DFF_16 dff_16(clk, next_state, out);
+	
+	// selects output if op was done
+	Mux2 in(A, out, prev_out, opA);
+	
+	wire unsigned [bits-1:0] add, sub;
+	wire unsigned add_carry, sub_carry;
+	wire unsigned overflow;
+	reg M0 = 0;
+	reg M1 = 1;
+	
+	// sets values based on mode
+	Adder_16bit adder(opA, B, M0, add_carry, add);
+	Adder_16bit subtractor(opA, B, M1, sub_carry, sub);
+	
+	// wires for other operations
+	wire [bits-1:0] mult_op;
+	wire [bits-1:0] shiftl_op;
+	wire [bits-1:0] and_op;
+	wire [bits-1:0] or_op;
+	wire [bits-1:0] xor_op;
+	wire [bits-1:0] not_op;
+	
+	// generate behavioral values
+	MULT mult1(opA, B, mult_op, overflow);
+	SHIFTL shiftl1(opA, B, shiftl_op);
+	AND and2(opA, B, and_op);
+	OR or1(opA, B, or_op);
+	XOR xor1(opA, B, xor_op);
+	NOT not1(opA, not_op);
+
+	// selects 1-hot select from opcode, rst, and error state
+	wire [9:0] s;
+	Selector select(opcode, rst, error, s);
+	
+	// select next state from opcode
+	Mux10 nextState(16'b0000000000000000, add, sub, mult_op, shiftl_op, and_op, or_op, xor_op, not_op, out, s, next_state);
+	
+	// assign error based on carry or overflow
+	assign error =  ((opcode == `ADD && add_carry == 1'b1) ? add_carry:
+					 (opcode == `SUB && sub_carry == 1'b1) ? sub_carry:
+					 (opcode == `MULT && overflow == 1'b1) ? overflow: 1'b0);
+	
+	always @(posedge clk) begin
+		status <= error;
 	end
+
 endmodule
