@@ -1,6 +1,6 @@
 // logic op AND for 1 bit inputs
-module SIMPLE_AND(input x,y, output reg xANDy);
+module SIMPLE_AND(input A,B, output reg aANDb);
 	always @(*) begin
-		xANDy <= x & y;
+		aANDb <= A & B;
 	end
 endmodule

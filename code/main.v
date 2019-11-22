@@ -33,7 +33,7 @@ module Test_Bench;
 		#5 rst = 1; #5 clk = 1; #5 clk = 0; rst = 0;
 		#5 A = 12; B = 12; opcode = `MULT;
 		#5 clk = 1; #5; clk = 0; 
-		$display("   %b (%d)|  %b (%d)|     %b      (%s)    |%b     (%d)|   %0s", A, A, B, B, opcode, "MULT", out, out, status == 1'b0 ? "Ready" : "Ready");
+		$display("   %b (%d)|  %b (%d)|     %b      (%s)   |%b     (%d)|   %0s", A, A, B, B, opcode, "MULT", out, out, status == 1'b0 ? "Ready" : "Ready");
 		#5; A = 9999; B = 9999; opcode = `MULT;
 		#5 clk = 1; #5; clk = 0; 
 		$display("   %b (%d)|  %b (%d)|     %b      (%s)   |%b     (%d)|   %0s", A, A, B, B, opcode, "MULT", status == 1'b0 ? out : 16'b0000000000000000, status == 1'b0 ? out : 16'b0000000000000000, status == 1'b0 ? "Ready" : "ERROR");
