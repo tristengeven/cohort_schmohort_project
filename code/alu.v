@@ -32,12 +32,14 @@ module ALU(input clk, rst, input [15:0] A, B, input [2:0] opcode, output [15:0] 
 	wire unsigned [bits-1:0] add, sub;
 	wire unsigned add_carry, sub_carry;
 	wire unsigned overflow;
-	reg M0 = 0;
-	reg M1 = 1;
+	
+	// modes for add and subtract
+	reg add_mode = 0;
+	reg sub_mode = 1;
 	
 	// sets values based on mode
-	Adder_16bit adder(opA, B, M0, add_carry, add);
-	Adder_16bit subtractor(opA, B, M1, sub_carry, sub);
+	Adder_16bit adder(opA, B, add_mode, add_carry, add);
+	Adder_16bit subtractor(opA, B, sub_mode, sub_carry, sub);
 	
 	// wires for other operations
 	wire [bits-1:0] mult_op;
